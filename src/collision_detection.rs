@@ -1,5 +1,4 @@
-use bevy::prelude::*;
-use std::collections::HashMap;
+use bevy::{prelude::*, utils::HashMap};
 
 use crate::{asteroids::Asteroid, health::Health, schedule::InGameSet, Spaceship, SpaceshipMissile};
 
