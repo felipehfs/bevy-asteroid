@@ -1,11 +1,25 @@
-use bevy::{prelude::*, utils::hashbrown::HashMap};
 
+use std::collections::HashMap;
+use bevy::prelude::*;
+
+use crate::{asteroids::Asteroid, schedule::InGameSet, Spaceship};
 
 pub struct CollisionDetectionPlugin;
 
 impl Plugin for CollisionDetectionPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, collision_detection);
+        app.add_systems(
+            Update,
+            collision_detection.in_set(InGameSet::CollisionDetection),
+        )
+        .add_systems(
+            Update,
+            (
+                handle_collisions::<Asteroid>,
+                handle_collisions::<Spaceship>,
+            )
+                .in_set(InGameSet::DespawnEntities),
+        );
     }
 }
 
@@ -24,17 +38,21 @@ impl Collider {
     }
 }
 
-
 fn collision_detection(mut query: Query<(Entity, &GlobalTransform, &mut Collider)>) {
-    let mut colliding_entities : HashMap<Entity, Vec<Entity>>= HashMap::new();
+    let mut colliding_entities: HashMap<Entity, Vec<Entity>> = HashMap::new();
 
     // First phase: detecting collisions
     for (entity_a, transform_a, collider_a) in query.iter() {
         for (entity_b, transform_b, collider_b) in query.iter() {
             if entity_a != entity_b {
-                let distance = transform_a.translation().distance(transform_b.translation());
+                let distance = transform_a
+                    .translation()
+                    .distance(transform_b.translation());
                 if distance < collider_a.radius + collider_b.radius {
-                    colliding_entities.entry(entity_a).or_insert_with(Vec::new).push(entity_b);
+                    colliding_entities
+                        .entry(entity_a)
+                        .or_insert_with(Vec::new)
+                        .push(entity_b);
                 }
             }
         }
@@ -44,7 +62,21 @@ fn collision_detection(mut query: Query<(Entity, &GlobalTransform, &mut Collider
     for (entity, _, mut collider) in query.iter_mut() {
         collider.colliding_entities.clear();
         if let Some(collisions) = colliding_entities.get(&entity) {
-            collider.colliding_entities.extend(collisions.iter().copied());
+            collider
+                .colliding_entities
+                .extend(collisions.iter().copied());
+        }
+    }
+}
+
+fn handle_collisions<T:Component>(mut commands: Commands, query: Query<(Entity, &Collider), With<T>>) {
+    for (entity, collider) in query.iter() {
+        for &collided_entity in collider.colliding_entities.iter() {
+            if query.get(collided_entity).is_ok() {
+                continue;
+            }
+
+            commands.entity(entity).despawn_recursive();
         }
     }
 }

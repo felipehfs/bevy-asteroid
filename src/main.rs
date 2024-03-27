@@ -9,6 +9,7 @@ mod asteroids;
 mod asset_loader;
 mod collision_detection;
 mod despawn;
+mod schedule;
 
 use asteroids::AsteroidPlugin;
 use debug::DebugPlugin;
@@ -17,6 +18,7 @@ use movement::*;
 use spaceship::*;
 use collision_detection::*;
 use despawn::DespawnPlugin;
+use schedule::SchedulePlugin;
 
 fn main() {
     let window = Some(Window {
@@ -42,6 +44,7 @@ fn main() {
         .add_plugins(AsteroidPlugin)
         .add_plugins(CameraPlugin)
         .add_plugins(CollisionDetectionPlugin)
+        .add_plugins(SchedulePlugin)
         //.add_plugins(DebugPlugin)
         .add_plugins(DespawnPlugin)
         .run();
